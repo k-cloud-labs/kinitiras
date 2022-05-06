@@ -20,7 +20,7 @@ metadata:
   namespace: kinitiras-system
   name: kinitiras-webhook
 spec:
-  updateStrategy:
+  strategy:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 10%
@@ -42,7 +42,7 @@ spec:
             - --v=2
             - --logtostderr=false
             - --log_dir=./log
-          image: kinitiras-webhook:test
+          image: registry.cn-hangzhou.aliyuncs.com/k-cloud-labs/kinitiras-webhook:f298e37
           imagePullPolicy: IfNotPresent
           name: kinitiras-webhook
           env:

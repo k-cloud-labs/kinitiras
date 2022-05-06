@@ -14,7 +14,7 @@ VERSION=${VERSION:="unknown"}
 
 function build_images() {
   local target="$1"
-  docker build -t ${REGISTRY}/${target}:${VERSION} -f ${REPO_ROOT}/images/${target}/Dockerfile ${REPO_ROOT}
+  docker build -t ${REGISTRY}/kinitiras-${target}:${VERSION} -f ${REPO_ROOT}/images/${target}/Dockerfile ${REPO_ROOT}
 }
 
 build_images $@

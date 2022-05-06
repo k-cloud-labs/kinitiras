@@ -17,3 +17,6 @@ vendor/
 
 # IDE
 .idea/
+
+# debug
+debug/

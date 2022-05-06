@@ -155,12 +155,12 @@ func setupOverridePolicyManager(informerManager informermanager.SingleClusterInf
 	opGVR := schema.GroupVersionResource{
 		Group:    policyv1alpha1.SchemeGroupVersion.Group,
 		Version:  policyv1alpha1.SchemeGroupVersion.Version,
-		Resource: "overridepolicy",
+		Resource: "overridepolicies",
 	}
 	copGVR := schema.GroupVersionResource{
 		Group:    policyv1alpha1.SchemeGroupVersion.Group,
 		Version:  policyv1alpha1.SchemeGroupVersion.Version,
-		Resource: "clusteroverridepolicy",
+		Resource: "clusteroverridepolicies",
 	}
 	opInformer := informerManager.Informer(opGVR)
 	copInformer := informerManager.Informer(copGVR)
@@ -179,7 +179,7 @@ func setupValidatePolicyManager(informerManager informermanager.SingleClusterInf
 	cvpGVR := schema.GroupVersionResource{
 		Group:    policyv1alpha1.SchemeGroupVersion.Group,
 		Version:  policyv1alpha1.SchemeGroupVersion.Version,
-		Resource: "clustervalidatepolicy",
+		Resource: "clustervalidatepolicies",
 	}
 	cvpInformer := informerManager.Informer(cvpGVR)
 
