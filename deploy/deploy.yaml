@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: kinitiras-system
+  name: kinitiras-webhook
+spec:
+  selector:
+    controller: kinitiras-webhook
+  ports:
+    - name: webhook
+      port: 8443
+      targetPort: 8443
+    - name: metrics
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: kinitiras-system
+  name: kinitiras-webhook
+spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 10%
+  selector:
+    matchLabels:
+      controller: kinitiras-webhook
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        controller: kinitiras-webhook
+    spec:
+      serviceAccountName: kinitiras
+      containers:
+        - command:
+            - ./webhook
+          args:
+            - --cert-dir=/certs
+            - --v=2
+            - --logtostderr=false
+            - --log_dir=./log
+          image: kinitiras-webhook:test
+          imagePullPolicy: IfNotPresent
+          name: kinitiras-webhook
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          volumeMounts:
+            - mountPath: /certs
+              name: cert
+              readOnly: true
+            - mountPath: /kinitiras/log
+              name: log
+              subPathExpr: $(POD_NAME)
+      volumes:
+        - name: cert
+          secret:
+            secretName: kinitiras-webhook-cert
+        - name: log
+          hostPath:
+            path: /var/log/kinitiras
+            type: DirectoryOrCreate
+

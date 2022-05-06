@@ -1,0 +1,53 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  namespace: kinitiras-system
+  name: kinitiras-webhook
+webhooks:
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: kinitiras-webhook
+        namespace: kinitiras-system
+        path: /mutate
+        port: 8443
+    failurePolicy: Fail
+    name: webhook.kinitiras.com
+    rules:
+      - apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - "*"
+        scope: "*"
+    sideEffects: None
+    timeoutSeconds: 3
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: kinitiras-webhook
+  namespace: kinitiras-system
+webhooks:
+  - name: webhook.karmada.io
+    rules:
+      - operations: ["CREATE", "UPDATE", "DELETE"]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["*"]
+        scope: "*"
+    clientConfig:
+      service:
+        name: kinitiras-webhook
+        namespace: kinitiras-system
+        path: /validate
+        port: 8443
+    failurePolicy: Fail
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
+    timeoutSeconds: 3
