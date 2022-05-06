@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 
 	policyv1alpha1 "github.com/k-cloud-labs/pkg/apis/policy/v1alpha1"
@@ -138,7 +139,7 @@ func Run(ctx context.Context, opts *options.Options) error {
 		hookServer := hookManager.GetWebhookServer()
 		hookServer.Register("/mutate", &webhook.Admission{Handler: pkgwebhook.NewMutatingAdmissionHandler(overrideManager)})
 		hookServer.Register("/validate", &webhook.Admission{Handler: pkgwebhook.NewValidatingAdmissionHandler(validateManager)})
-		hookServer.Register("/readyz", &healthz.Handler{})
+		hookServer.WebhookMux.Handle("/readyz", http.StripPrefix("/readyz", &healthz.Handler{}))
 	}()
 
 	// blocks until the context is done.
