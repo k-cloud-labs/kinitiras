@@ -9,7 +9,6 @@ import (
 	"os"
 
 	policyv1alpha1 "github.com/k-cloud-labs/pkg/apis/policy/v1alpha1"
-	"github.com/k-cloud-labs/pkg/client/listers/policy/v1alpha1"
 	"github.com/k-cloud-labs/pkg/util/informermanager"
 	"github.com/k-cloud-labs/pkg/util/overridemanager"
 	"github.com/k-cloud-labs/pkg/util/validatemanager"
@@ -173,8 +172,8 @@ func setupOverridePolicyManager(informerManager informermanager.SingleClusterInf
 		return nil, errors.New("failed to sync override policy.")
 	}
 
-	return overridemanager.NewOverrideManager(v1alpha1.NewClusterOverridePolicyLister(copInformer.GetIndexer()),
-		v1alpha1.NewOverridePolicyLister(opInformer.GetIndexer())), nil
+	return overridemanager.NewOverrideManager(lister.NewUnstructuredClusterOverridePolicyLister(copInformer.GetIndexer()),
+		lister.NewUnstructuredOverridePolicyLister(opInformer.GetIndexer())), nil
 }
 
 func setupValidatePolicyManager(informerManager informermanager.SingleClusterInformerManager) (validatemanager.ValidateManager, error) {
