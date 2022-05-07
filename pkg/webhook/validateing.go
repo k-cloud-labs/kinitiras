@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/k-cloud-labs/pkg/util/validatemanager"
-	admissionv1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -25,7 +24,7 @@ func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request)
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	result, err := v.validateManager.ApplyValidatePolicies(obj, oldObj, admissionv1.Delete)
+	result, err := v.validateManager.ApplyValidatePolicies(obj, oldObj, req.Operation)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
