@@ -331,6 +331,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/k-cloud-labs/pkg v0.1.1-0.20220507035430-f53ba7c1367d h1:eKFjTdNZxtzC7E7J6EjG3/zT359nHdx3rqYVcxRB/Iw=
 github.com/k-cloud-labs/pkg v0.1.1-0.20220507035430-f53ba7c1367d/go.mod h1:+5RsSMC7VOdDXdRLwTBZzcY8W931ETI4r4DBqUSBnCk=
+github.com/k-cloud-labs/pkg v0.1.1-0.20220507112514-79cc394ba7fa h1:gZVXYsyJ+RJaXB4DdDkCGT3ShRLUamdvVRqJPw5sZPg=
+github.com/k-cloud-labs/pkg v0.1.1-0.20220507112514-79cc394ba7fa/go.mod h1:+5RsSMC7VOdDXdRLwTBZzcY8W931ETI4r4DBqUSBnCk=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

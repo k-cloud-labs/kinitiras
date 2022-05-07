@@ -1,5 +1,5 @@
 # kinitiras
-![pidalio-logo](docs/images/pidolio.png)
+![kinitiras-logo](docs/images/kinitiras.png)
 
 [![Build Status](https://github.com/k-cloud-labs/kinitiras/actions/workflows/ci.yml/badge.svg)](https://github.com/k-cloud-labs/kinitiras/actions?query=workflow%3Abuild)
 [![codecov](https://codecov.io/gh/k-cloud-labs/kinitiras/branch/main/graph/badge.svg?token=74uYpOiawR)](https://codecov.io/gh/k-cloud-labs/kinitiras)
