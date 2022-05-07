@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	pkgadmission "github.com/k-cloud-labs/kinitiras/pkg/admission"
 	"github.com/k-cloud-labs/pkg/util/validatemanager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -30,7 +31,7 @@ func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request)
 	}
 
 	if !result.Valid {
-		return admission.Denied(result.Reason)
+		return pkgadmission.ResponseFailure(false, result.Reason)
 	}
 
 	return admission.Allowed("")

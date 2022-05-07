@@ -27,34 +27,34 @@ import (
 	"github.com/k-cloud-labs/pkg/util/converter"
 )
 
-// clusterValidatePolicyLister implements the ClusterValidatePolicyLister interface.
-type unstructuredClusterValidatePolicyLister struct {
+// clusterOverridePolicyLister implements the ClusterOverridePolicyLister interface.
+type unstructuredClusterOverridePolicyLister struct {
 	indexer cache.Indexer
 }
 
-// NewUnstructuredClusterValidatePolicyLister returns a new ClusterValidatePolicyLister.
-func NewUnstructuredClusterValidatePolicyLister(indexer cache.Indexer) v1alpha1.ClusterValidatePolicyLister {
-	return &unstructuredClusterValidatePolicyLister{indexer: indexer}
+// NewUnstructuredClusterOverridePolicyLister returns a new ClusterOverridePolicyLister.
+func NewUnstructuredClusterOverridePolicyLister(indexer cache.Indexer) v1alpha1.ClusterOverridePolicyLister {
+	return &unstructuredClusterOverridePolicyLister{indexer: indexer}
 }
 
-// List lists all ClusterValidatePolicies in the indexer.
-func (s *unstructuredClusterValidatePolicyLister) List(selector labels.Selector) (ret []*policyv1alpha1.ClusterValidatePolicy, err error) {
+// List lists all ClusterOverridePolicies in the indexer.
+func (s *unstructuredClusterOverridePolicyLister) List(selector labels.Selector) (ret []*policyv1alpha1.ClusterOverridePolicy, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		cvp, _ := converter.ConvertToClusterValidatePolicy(m.(*unstructured.Unstructured))
-		ret = append(ret, cvp)
+		cop, _ := converter.ConvertToClusterOverridePolicy(m.(*unstructured.Unstructured))
+		ret = append(ret, cop)
 	})
 	return ret, err
 }
 
-// Get retrieves the ClusterValidatePolicy from the index for a given name.
-func (s *unstructuredClusterValidatePolicyLister) Get(name string) (*policyv1alpha1.ClusterValidatePolicy, error) {
+// Get retrieves the ClusterOverridePolicy from the index for a given name.
+func (s *unstructuredClusterOverridePolicyLister) Get(name string) (*policyv1alpha1.ClusterOverridePolicy, error) {
 	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, apierrors.NewNotFound(policyv1alpha1.Resource("clustervalidatepolicy"), name)
+		return nil, apierrors.NewNotFound(policyv1alpha1.Resource("clusteroverridepolicy"), name)
 	}
-	cvp, _ := converter.ConvertToClusterValidatePolicy(obj.(*unstructured.Unstructured))
-	return cvp, nil
+	cop, _ := converter.ConvertToClusterOverridePolicy(obj.(*unstructured.Unstructured))
+	return cop, nil
 }
