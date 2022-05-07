@@ -23,6 +23,7 @@ import (
 
 	"github.com/k-cloud-labs/kinitiras/cmd/app/options"
 	"github.com/k-cloud-labs/kinitiras/pkg/controller/cert"
+	"github.com/k-cloud-labs/kinitiras/pkg/lister"
 	"github.com/k-cloud-labs/kinitiras/pkg/util/gclient"
 	"github.com/k-cloud-labs/kinitiras/pkg/version"
 	"github.com/k-cloud-labs/kinitiras/pkg/version/sharedcommand"
@@ -190,5 +191,5 @@ func setupValidatePolicyManager(informerManager informermanager.SingleClusterInf
 		return nil, errors.New("failed to sync validate policy.")
 	}
 
-	return validatemanager.NewValidateManager(v1alpha1.NewClusterValidatePolicyLister(cvpInformer.GetIndexer())), nil
+	return validatemanager.NewValidateManager(lister.NewUnstructuredClusterValidatePolicyLister(cvpInformer.GetIndexer())), nil
 }

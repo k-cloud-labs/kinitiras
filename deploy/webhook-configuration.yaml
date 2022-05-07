@@ -37,7 +37,7 @@ metadata:
   name: kinitiras-webhook
   namespace: kinitiras-system
 webhooks:
-  - name: webhook.karmada.io
+  - name: webhook.kinitiras.io
     objectSelector:
       matchLabels:
         kinitiras.kcloudlabs.io/webhook: enabled

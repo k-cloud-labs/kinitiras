@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-func TestValidateKarmadaWebhookConfiguration(t *testing.T) {
+func TestValidateKinitirasWebhookConfiguration(t *testing.T) {
 	successCases := []Options{
 		{
 			BindAddress:  "127.0.0.1",

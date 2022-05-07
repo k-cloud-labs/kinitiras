@@ -4,10 +4,11 @@ go 1.17
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/k-cloud-labs/pkg v0.1.1-0.20220505083702-9a3b5b0a4254
+	github.com/k-cloud-labs/pkg v0.1.1-0.20220507021146-ec69e63bbffc
 	github.com/open-policy-agent/cert-controller v0.3.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
+	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
 	k8s.io/apiserver v0.23.6
@@ -82,7 +83,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211029165221-6e7872819dc8 // indirect
-	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
