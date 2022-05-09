@@ -1,0 +1,32 @@
+kind: ClusterOverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-anno-cop-cue
+spec:
+  resourceSelectors:
+    - apiVersion: v1
+      kind: Pod
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    - targetOperations:
+        - CREATE
+      overriders:
+        cue: |-
+          object: _ @tag(object)
+
+          patches: [
+            if object.metadata.annotations == _|_ {
+              {
+                op: "add"
+                path: "/metadata/annotations"
+                value: {}
+              }
+            },
+            {
+              op: "add"
+              path: "/metadata/annotations/added-by"
+              value: "cue"
+            }
+          ]

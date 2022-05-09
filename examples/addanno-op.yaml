@@ -1,0 +1,20 @@
+kind: OverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-anno-op-plaintext
+  namespace: default
+spec:
+  resourceSelectors:
+    - apiVersion: v1
+      kind: Pod
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    - targetOperations:
+        - CREATE
+      overriders:
+        plaintext:
+          - path: /metadata/annotations/added-by
+            operator: add
+            value: op

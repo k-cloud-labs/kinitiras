@@ -1,0 +1,25 @@
+apiVersion: policy.kcloudlabs.io/v1alpha1
+kind: ClusterValidatePolicy
+metadata:
+  name: test-delete-ns
+spec:
+  validateRules:
+    - cue: |-
+        object: _ @tag(object)
+
+        reject: object.metadata.labels != null && object.metadata.labels["kinitiras.kcloudlabs.io/webhook"] == "enabled"
+
+        validate: {
+          if reject{
+                  reason: "operation rejected"
+          }
+          if !reject{
+                  reason: ""
+          }
+          valid: !reject
+        }
+      targetOperations:
+        - DELETE
+  resourceSelectors:
+    - apiVersion: v1
+      kind: Namespace

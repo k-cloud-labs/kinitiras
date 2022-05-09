@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/k-cloud-labs/pkg v0.1.1-0.20220507112514-79cc394ba7fa
+	github.com/k-cloud-labs/pkg v0.2.0
 	github.com/open-policy-agent/cert-controller v0.3.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
