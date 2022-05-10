@@ -16,5 +16,5 @@ spec:
       overriders:
         plaintext:
           - path: /metadata/annotations/added-by
-            operator: add
+            op: add
             value: op
