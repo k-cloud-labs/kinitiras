@@ -56,7 +56,7 @@ Schema:
 ```cue
 // for input parameter, oldObject only exist in `UPDATE` operation for clustervalidatepolicy 
 object: _ @tag(object) 
-oldObject: _ @tag(object)
+oldObject: _ @tag(oldObject)
 
 patch: {
 	op: string
