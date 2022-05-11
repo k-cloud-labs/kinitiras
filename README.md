@@ -54,7 +54,7 @@ parameter and validating result will be returned by `validate` parameter.
 Schema:  
 
 ```cue
-// for input parameter, oldObject only exist in `UPDATE` opeation for clustervalidatepolicy 
+// for input parameter, oldObject only exist in `UPDATE` operation for clustervalidatepolicy 
 object: _ @tag(object) 
 oldObject: _ @tag(object)
 
