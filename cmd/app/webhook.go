@@ -9,9 +9,9 @@ import (
 	"os"
 
 	policyv1alpha1 "github.com/k-cloud-labs/pkg/apis/policy/v1alpha1"
-	"github.com/k-cloud-labs/pkg/util/informermanager"
-	"github.com/k-cloud-labs/pkg/util/overridemanager"
-	"github.com/k-cloud-labs/pkg/util/validatemanager"
+	"github.com/k-cloud-labs/pkg/utils/informermanager"
+	"github.com/k-cloud-labs/pkg/utils/overridemanager"
+	"github.com/k-cloud-labs/pkg/utils/validatemanager"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
