@@ -6,8 +6,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/k-cloud-labs/pkg/util"
-	"github.com/k-cloud-labs/pkg/util/overridemanager"
+	"github.com/k-cloud-labs/pkg/utils"
+	"github.com/k-cloud-labs/pkg/utils/overridemanager"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog/v2"
@@ -46,7 +46,7 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 		if err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
-		klog.V(4).InfoS("override policy applied.", "resource", klog.KObj(obj), util.AppliedOverrides, string(opBytes), util.AppliedClusterOverrides, string(copBytes))
+		klog.V(4).InfoS("override policy applied.", "resource", klog.KObj(obj), utils.AppliedOverrides, string(opBytes), utils.AppliedClusterOverrides, string(copBytes))
 	} else {
 		klog.InfoS("override policy applied.", "resource", klog.KObj(obj))
 	}

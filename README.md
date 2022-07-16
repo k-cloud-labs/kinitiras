@@ -6,9 +6,11 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/k-cloud-labs/kinitiras)](https://goreportcard.com/report/github.com/k-cloud-labs/kinitiras)
 [![Go doc](https://img.shields.io/badge/go.dev-reference-brightgreen?logo=go&logoColor=white&style=flat)](https://pkg.go.dev/github.com/k-cloud-labs/kinitiras)
 
+[[中文](README-zh.md)]
+
 A **lightweight** but **powerful** and **programmable** rule engine for kubernetes admission webhook.
 
-If you want to use it in clientside with client-go, please use https://github.com/k-cloud-labs/pidolio.
+If you want to use it in clientside with client-go, please use [pidalio](https://github.com/k-cloud-labs/pidalio).
 
 ## Quick Start
 
@@ -48,8 +50,13 @@ For namespaced scoped resource, apply order is:
 
 Both mutate and validate policy are programmable via [CUE](https://cuelang.org/).   
 
-There is a **constraint** that the kubernetes object will be passed to CUE by `object` parameter and the mutating result will be returned by `patches`
-parameter and validating result will be returned by `validate` parameter.
+### Constraint
+1. The kubernetes object will be passed to CUE by `object` parameter.
+2. The mutating result will be returned by `patches` parameter. 
+3. The Validating result will be returned by `validate` parameter.  
+4. Use `processing` to support data passing. It contains `http` and `output` schema.
+   1. `http` used to make a http(s) request. Refer to: [http](https://pkg.go.dev/cuelang.org/go/pkg/tool/http) 
+   2. `output` used to receive response. You should add some properties you need to it.
 
 Schema:  
 
@@ -58,11 +65,28 @@ Schema:
 object: _ @tag(object) 
 oldObject: _ @tag(oldObject)
 
+// use processing to pass data. A http reqeust will be make and output contains the response.
+processing: {
+	output: {
+		// add what you need	
+	}
+	http: {
+	    method: *"GET" | string
+	    url: parameter.serviceURL
+	    request: {
+	    	body ?: bytes
+	    	header: {}
+	    	trailer: {}
+	    }
+	}
+}
+
 patch: {
 	op: string
 	path: string
 	value: string
 }
+
 // for mutating result
 patches: [...patch] 
 
@@ -86,7 +110,8 @@ The `addanno-cop.yaml` will add annotation `added-by=cue` to pod labeled with `k
 ## Feature
 - [x] Support mutate k8s resource by (Cluster)OverridePolicy via plaintext jsonpatch.
 - [x] Support mutate k8s resource by (Cluster)OverridePolicy programmable via CUE.
-- [x] Support validate k8s resource by ClusterValdiatePolicy programmable via CUE.
+- [x] Support validate k8s resource by ClusterValidatePolicy programmable via CUE.
+- [x] Support Data passing by http request via CUE.
 - [ ] kubectl plugin to validate CUE.
 - [ ] ...
 

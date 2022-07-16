@@ -19,12 +19,11 @@ package lister
 import (
 	policyv1alpha1 "github.com/k-cloud-labs/pkg/apis/policy/v1alpha1"
 	"github.com/k-cloud-labs/pkg/client/listers/policy/v1alpha1"
+	"github.com/k-cloud-labs/pkg/utils/util"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/k-cloud-labs/pkg/util/converter"
 )
 
 // clusterOverridePolicyLister implements the ClusterOverridePolicyLister interface.
@@ -40,7 +39,7 @@ func NewUnstructuredClusterOverridePolicyLister(indexer cache.Indexer) v1alpha1.
 // List lists all ClusterOverridePolicies in the indexer.
 func (s *unstructuredClusterOverridePolicyLister) List(selector labels.Selector) (ret []*policyv1alpha1.ClusterOverridePolicy, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		cop, _ := converter.ConvertToClusterOverridePolicy(m.(*unstructured.Unstructured))
+		cop, _ := util.ConvertToClusterOverridePolicy(m.(*unstructured.Unstructured))
 		ret = append(ret, cop)
 	})
 	return ret, err
@@ -55,6 +54,6 @@ func (s *unstructuredClusterOverridePolicyLister) Get(name string) (*policyv1alp
 	if !exists {
 		return nil, apierrors.NewNotFound(policyv1alpha1.Resource("clusteroverridepolicy"), name)
 	}
-	cop, _ := converter.ConvertToClusterOverridePolicy(obj.(*unstructured.Unstructured))
+	cop, _ := util.ConvertToClusterOverridePolicy(obj.(*unstructured.Unstructured))
 	return cop, nil
 }

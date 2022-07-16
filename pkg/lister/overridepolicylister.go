@@ -18,13 +18,12 @@ package lister
 
 import (
 	policyv1alpha1 "github.com/k-cloud-labs/pkg/apis/policy/v1alpha1"
-	"github.com/k-cloud-labs/pkg/util/converter"
+	"github.com/k-cloud-labs/pkg/client/listers/policy/v1alpha1"
+	"github.com/k-cloud-labs/pkg/utils/util"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/k-cloud-labs/pkg/client/listers/policy/v1alpha1"
 )
 
 // unstructuredOverridePolicyLister implements the OverridePolicyLister interface.
@@ -40,7 +39,7 @@ func NewUnstructuredOverridePolicyLister(indexer cache.Indexer) v1alpha1.Overrid
 // List lists all OverridePolicies in the indexer.
 func (s *unstructuredOverridePolicyLister) List(selector labels.Selector) (ret []*policyv1alpha1.OverridePolicy, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		op, _ := converter.ConvertToOverridePolicy(m.(*unstructured.Unstructured))
+		op, _ := util.ConvertToOverridePolicy(m.(*unstructured.Unstructured))
 		ret = append(ret, op)
 	})
 	return ret, err
@@ -61,7 +60,7 @@ type unstructuredOverridePolicyNamespaceLister struct {
 // List lists all OverridePolicies in the indexer for a given namespace.
 func (s unstructuredOverridePolicyNamespaceLister) List(selector labels.Selector) (ret []*policyv1alpha1.OverridePolicy, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		op, _ := converter.ConvertToOverridePolicy(m.(*unstructured.Unstructured))
+		op, _ := util.ConvertToOverridePolicy(m.(*unstructured.Unstructured))
 		ret = append(ret, op)
 	})
 	return ret, err
@@ -76,6 +75,6 @@ func (s unstructuredOverridePolicyNamespaceLister) Get(name string) (*policyv1al
 	if !exists {
 		return nil, apierrors.NewNotFound(policyv1alpha1.Resource("overridepolicy"), name)
 	}
-	op, _ := converter.ConvertToOverridePolicy(obj.(*unstructured.Unstructured))
+	op, _ := util.ConvertToOverridePolicy(obj.(*unstructured.Unstructured))
 	return op, nil
 }
