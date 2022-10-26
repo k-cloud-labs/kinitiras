@@ -1,0 +1,41 @@
+kind: OverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-labels-op-plaintext
+  namespace: default
+  labels:
+    kinitiras.kcloudlabs.io/webhook: enabled
+spec:
+  resourceSelectors:
+    - apiVersion: v1
+      kind: Pod
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          type: labels
+          operation: remove
+          path: "xxx-id"
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          type: labels
+          operation: replace
+          path: "owned-by"
+          value:
+            string: "cue"
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          type: labels
+          operation: replace
+          path: restartPolicy
+          valueRef:
+            from: current
+            path: "/spec/restartPolicy"

@@ -1,0 +1,27 @@
+kind: OverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-oversell-op-plaintext
+  namespace: default
+  labels:
+    kinitiras.kcloudlabs.io/webhook: enabled
+spec:
+  resourceSelectors:
+    # matches Deployment with below label
+    - apiVersion: apps/v1
+      kind: Deployment
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    - targetOperations:
+        - CREATE
+        - UPDATE
+      overriders:
+        template:
+          type: resourcesOversell
+          operation: replace # set remove to reset oversell
+          resourcesOversell:
+            cpuFactor: "0.5" # use half of limit / set 0 as placeholder when it needed remove
+            memoryFactor: "0.2" # use 1/5 of limit
+            diskFactor: "0.1" # use 1/10 of limit

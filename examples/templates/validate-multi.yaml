@@ -1,0 +1,129 @@
+apiVersion: policy.kcloudlabs.io/v1alpha1
+kind: ClusterValidatePolicy
+metadata:
+  name: test-multi-validate
+  labels:
+    kinitiras.kcloudlabs.io/webhook: enabled
+spec:
+  resourceSelectors:
+    - apiVersion: v1
+      kind: Namespace
+  validateRules:
+    - targetOperations:
+      - DELETE
+      template:
+        type: condition
+        condition:
+          cond: Exist
+          message: "cannot delete this ns"
+          dataRef:
+            from: current
+            path: "/metadata/annotations/no-delete"
+    - targetOperations:
+      - DELETE
+      template:
+        type: condition
+        condition:
+          cond: Equal
+          message: "cannot delete this ns"
+          dataRef:
+            from: current
+            path: "/metadata/annotations/owned-by"
+          value: # reject when field value equals bormo
+            string: "bromo"
+    - targetOperations:
+        - DELETE
+      template:
+        type: condition
+        condition:
+          cond: Equal
+          message: "api reject deletion"
+          value:
+            boolean: true
+          dataRef:
+            from: http
+            path: "data.result.reject"
+            http:
+              url: "https://xxx.com"
+              method: GET
+              params:
+                name: "{{metadata.name}}"
+    - targetOperations:
+        - DELETE
+      template:
+        type: condition
+        condition:
+          cond: Gte
+          message: "k8s reject deletion"
+          valueRef:
+            from: current
+            path: "/spec/refer/replica"
+          dataRef:
+            from: k8s
+            path: "/spec/replica"
+            k8s:
+              apiVersion: v1
+              kind: deployment
+              namespace: "{{metadata.namespace}}"
+              name: "{{metadata.annotations.deployment-id}}"
+    - targetOperations:
+        - DELETE
+      template:
+        type: condition
+        condition:
+          cond: In
+          message: "cannot delete this ns"
+          value:
+            stringSlice:
+              - bromo
+              - ecp
+              - oam
+              - leap
+          dataRef:
+            from: current
+            path: "/metadata/annotations/owned-by"
+    - targetOperations:
+        - DELETE
+      template:
+        type: condition
+        condition:
+          cond: In
+          message: "cannot delete this ns"
+          value:
+            integerSlice:
+              - 12
+              - 13
+              - 15
+          dataRef:
+            from: current
+            path: "/metadata/annotations/integer"
+    - targetOperations:
+        - DELETE
+      template:
+        type: condition
+        condition:
+          cond: In
+          message: "cannot delete this ns"
+          value:
+            floatSlice:
+              - "1.2"
+              - "1.4"
+              - "1.54"
+          dataRef:
+            from: current
+            path: "/metadata/annotations/float"
+    - targetOperations:
+        - DELETE
+      template:
+        type: condition
+        condition:
+          cond: NotIn
+          message: "cannot delete this ns"
+          value:
+            stringSlice:
+              - bromo
+              - leap
+              - ecp
+          dataRef:
+            from: current
+            path: "/metadata/annotations/owned-by"

@@ -27,7 +27,7 @@ spec:
   selector:
     matchLabels:
       controller: kinitiras-webhook
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:
@@ -39,10 +39,11 @@ spec:
             - ./webhook
           args:
             - --cert-dir=/certs
-            - --v=2
+            - --v=4
             - --logtostderr=false
+            - --alsologtostderr=true
             - --log_dir=./log
-          image: registry.cn-hangzhou.aliyuncs.com/k-cloud-labs/kinitiras-webhook:v0.1.1
+          image: docker.io/yusank/kinitiras-webhook:v0.1.2-01
           imagePullPolicy: IfNotPresent
           name: kinitiras-webhook
           env:
@@ -72,6 +73,9 @@ spec:
             - mountPath: /kinitiras/log
               name: log
               subPathExpr: $(POD_NAME)
+            - mountPath: /etc/templates
+              name: templates
+              readOnly: true
       volumes:
         - name: cert
           secret:
@@ -80,4 +84,7 @@ spec:
           hostPath:
             path: /var/log/kinitiras
             type: DirectoryOrCreate
-
+        - name: templates
+          hostPath:
+            path: "/etc/templates"
+            type: Directory

@@ -1,0 +1,42 @@
+kind: OverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-resource-op-plaintext
+  namespace: default
+  labels:
+    kinitiras.kcloudlabs.io/webhook: enabled
+spec:
+  resourceSelectors:
+    # matches Deployment contains below label
+    - apiVersion: apps/v1
+      kind: Deployment
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    - targetOperations:
+        - CREATE
+        - UPDATE
+      overriders:
+        template:
+          type: resources
+          operation: replace
+          # replace (add if not exist) resource limitation to 100c and 4Ti memory
+          resources:
+            limits:
+              cpu: 100
+              memory: 4096Gi # support all format of memory
+    - targetOperations:
+        - CREATE
+        - UPDATE
+      overriders:
+        template:
+          type: resources
+          operation: remove
+          # delete resource request from deployment
+          # only remove cpu and memory field
+          resources:
+            requests:
+              cpu: 0 # zero just a placeholder here
+              memory: 0
+              ephemeral-storage: 0

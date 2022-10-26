@@ -126,3 +126,10 @@ image-kinitiras-webhook: ## Build webhook image
 	VERSION=$(VERSION) REGISTRY=$(REGISTRY) hack/docker.sh webhook
 
 
+.PHONY: image-kinitiras-webhook-local
+image-kinitiras-webhook-local: ## build binary locally instead of via dockerfile
+	echo "building webhook"
+	VERSION=$(VERSION) GOOS=linux GOARCH=amd64 make -f ./Makefile kinitiras-webhook
+	echo "build docker image"
+	VERSION=$(VERSION) REGISTRY=$(REGISTRY) DockerfileName="local.dockerfile" hack/docker.sh webhook
+	docker push $(REGISTRY)/kinitiras-webhook:$(VERSION)
