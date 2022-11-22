@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
@@ -102,39 +103,65 @@ func Run(ctx context.Context, opts *options.Options) error {
 
 	informerManager := informermanager.NewSingleClusterInformerManager(dynamic.NewForConfigOrDie(hookManager.GetConfig()), 0, ctx.Done())
 
-	// this func will block until cache synced.
-	dc, err := dynamiclister.NewDynamicResourceLister(hookManager.GetConfig(), ctx.Done(),
-		// pre cached resources
-		schema.GroupVersionResource{
-			Group:    "apps",
-			Version:  "v1",
-			Resource: "deployments",
-		}, schema.GroupVersionResource{
-			Version:  "v1",
-			Resource: "pods",
-		}, schema.GroupVersionResource{
-			Group:    "apps",
-			Version:  "v1",
-			Resource: "replicasets",
-		})
+	resourceLister, err := dynamiclister.NewDynamicResourceLister(hookManager.GetConfig(), ctx.Done())
 	if err != nil {
 		klog.ErrorS(err, "failed to init dynamic client.")
 		return err
 	}
 
-	overrideManager, err := setupOverridePolicyManager(dc, informerManager)
-	if err != nil {
-		klog.ErrorS(err, "failed to setup override policy manager.")
+	eg, _ := errgroup.WithContext(ctx)
+	var (
+		overrideManager overridemanager.OverrideManager
+		validateManager validatemanager.ValidateManager
+	)
+
+	eg.Go(func() error {
+		err := resourceLister.RegisterNewResource(true,
+			// pre cached resources
+			schema.GroupVersionKind{
+				Group:   "apps",
+				Version: "v1",
+				Kind:    "Deployment",
+			}, schema.GroupVersionKind{
+				Version: "v1",
+				Kind:    "Pod",
+			}, schema.GroupVersionKind{
+				Group:   "apps",
+				Version: "v1",
+				Kind:    "ReplicaSet",
+			})
+		if err != nil {
+			klog.ErrorS(err, "failed to register resource to lister")
+		}
+		return err
+	})
+	eg.Go(func() error {
+		temp, err := setupOverridePolicyManager(resourceLister, informerManager)
+		if err != nil {
+			klog.ErrorS(err, "failed to setup override policy manager.")
+			return err
+		}
+
+		overrideManager = temp
+		return nil
+	})
+
+	eg.Go(func() error {
+		temp, err := setupValidatePolicyManager(resourceLister, informerManager)
+		if err != nil {
+			klog.ErrorS(err, "failed to setup validate policy manager.")
+			return err
+		}
+
+		validateManager = temp
+		return nil
+	})
+
+	if err = eg.Wait(); err != nil {
 		return err
 	}
 
-	validateManager, err := setupValidatePolicyManager(dc, informerManager)
-	if err != nil {
-		klog.ErrorS(err, "failed to setup validate policy manager.")
-		return err
-	}
-
-	mtm, err := templatemanager.NewOverrideTemplateManager(&templatemanager.TemplateSource{
+	otm, err := templatemanager.NewOverrideTemplateManager(&templatemanager.TemplateSource{
 		Content:      templates.OverrideTemplate,
 		TemplateName: "BaseTemplate",
 	})
@@ -152,7 +179,7 @@ func Run(ctx context.Context, opts *options.Options) error {
 		return err
 	}
 
-	policyInterrupter := interrupter.NewPolicyInterrupter(mtm, vtm, templatemanager.NewCueManager())
+	policyInterrupter := interrupter.NewPolicyInterrupter(otm, vtm, templatemanager.NewCueManager())
 
 	setupCh, err := cert.SetupCertRotator(hookManager, cert.Options{
 		Namespace:      os.Getenv("NAMESPACE"),
@@ -214,7 +241,7 @@ func setupOverridePolicyManager(dc dynamiclister.DynamicResourceLister, informer
 	informerManager.Start()
 
 	if cache := informerManager.WaitForCacheSync(); !cache[opGVR] || !cache[copGVR] {
-		return nil, errors.New("failed to sync override policy.")
+		return nil, errors.New("failed to sync override policy")
 	}
 
 	return overridemanager.NewOverrideManager(dc, lister.NewUnstructuredClusterOverridePolicyLister(copInformer.GetIndexer()),
