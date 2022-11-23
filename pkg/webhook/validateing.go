@@ -14,9 +14,9 @@ import (
 )
 
 type ValidatingAdmission struct {
-	decoder           *admission.Decoder
-	validateManager   validatemanager.ValidateManager
-	policyInterrupter interrupter.PolicyInterrupter
+	decoder                  *admission.Decoder
+	validateManager          validatemanager.ValidateManager
+	policyInterrupterManager interrupter.PolicyInterrupter
 }
 
 // Check if our MutatingAdmission implements necessary interface
@@ -30,7 +30,7 @@ func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request)
 	}
 
 	// if obj is known policy, then run policy interrupter
-	err = v.policyInterrupter.OnValidating(obj, oldObj)
+	err = v.policyInterrupterManager.OnValidating(obj, oldObj)
 	if err != nil {
 		return admission.Denied(err.Error())
 	}
@@ -54,9 +54,9 @@ func (a *ValidatingAdmission) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func NewValidatingAdmissionHandler(validateManager validatemanager.ValidateManager, policyInterrupter interrupter.PolicyInterrupter) webhook.AdmissionHandler {
+func NewValidatingAdmissionHandler(validateManager validatemanager.ValidateManager, policyInterrupterManager interrupter.PolicyInterrupterManager) webhook.AdmissionHandler {
 	return &ValidatingAdmission{
-		validateManager:   validateManager,
-		policyInterrupter: policyInterrupter,
+		validateManager:          validateManager,
+		policyInterrupterManager: policyInterrupterManager,
 	}
 }

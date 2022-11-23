@@ -19,9 +19,9 @@ import (
 )
 
 type MutatingAdmission struct {
-	decoder           *admission.Decoder
-	overrideManager   overridemanager.OverrideManager
-	policyInterrupter interrupter.PolicyInterrupter
+	decoder                  *admission.Decoder
+	overrideManager          overridemanager.OverrideManager
+	policyInterrupterManager interrupter.PolicyInterrupter
 }
 
 // Check if our MutatingAdmission implements necessary interface
@@ -37,7 +37,7 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 	newObj := obj.DeepCopy()
 	if req.Operation != admissionv1.Delete {
 		// if obj is known policy, then run policy interrupter
-		patches, err := a.policyInterrupter.OnMutating(newObj, oldObj)
+		patches, err := a.policyInterrupterManager.OnMutating(newObj, oldObj)
 		if err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
@@ -103,10 +103,10 @@ func (a *MutatingAdmission) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func NewMutatingAdmissionHandler(overrideManager overridemanager.OverrideManager, policyInterrupter interrupter.PolicyInterrupter) webhook.AdmissionHandler {
+func NewMutatingAdmissionHandler(overrideManager overridemanager.OverrideManager, policyInterrupterManager interrupter.PolicyInterrupterManager) webhook.AdmissionHandler {
 	return &MutatingAdmission{
-		overrideManager:   overrideManager,
-		policyInterrupter: policyInterrupter,
+		overrideManager:          overrideManager,
+		policyInterrupterManager: policyInterrupterManager,
 	}
 }
 
