@@ -30,7 +30,7 @@ func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request)
 	}
 
 	// if obj is known policy, then run policy interrupter
-	err = v.policyInterrupterManager.OnValidating(obj, oldObj)
+	err = v.policyInterrupterManager.OnValidating(obj, oldObj, req.Operation)
 	if err != nil {
 		return admission.Denied(err.Error())
 	}

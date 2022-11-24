@@ -35,25 +35,23 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 	}
 
 	newObj := obj.DeepCopy()
-	if req.Operation != admissionv1.Delete {
-		// if obj is known policy, then run policy interrupter
-		patches, err := a.policyInterrupterManager.OnMutating(newObj, oldObj)
+	// if obj is known policy, then run policy interrupter
+	patches, err := a.policyInterrupterManager.OnMutating(newObj, oldObj, req.Operation)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+
+	if len(patches) != 0 {
+		// patch data
+		patchedObj, err := json.Marshal(newObj)
 		if err != nil {
 			return admission.Errored(http.StatusInternalServerError, err)
 		}
 
-		if len(patches) != 0 {
-			// patch data
-			patchedObj, err := json.Marshal(newObj)
-			if err != nil {
-				return admission.Errored(http.StatusInternalServerError, err)
-			}
-
-			return admission.PatchResponseFromRaw(req.Object.Raw, patchedObj)
-		}
+		return admission.PatchResponseFromRaw(req.Object.Raw, patchedObj)
 	}
 
-	if klog.V(7).Enabled() {
+	if klog.V(4).Enabled() {
 		buf := &bytes.Buffer{}
 		enc := json.NewEncoder(buf)
 		enc.SetIndent("", "\t")
