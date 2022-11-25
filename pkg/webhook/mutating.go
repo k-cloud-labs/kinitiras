@@ -42,6 +42,17 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 	}
 
 	if len(patches) != 0 {
+		klog.V(4).InfoS("patches for policy", "policy", obj.GroupVersionKind(), "patchesCount", len(patches))
+		if klog.V(5).Enabled() {
+			buf := &bytes.Buffer{}
+			enc := json.NewEncoder(buf)
+			enc.SetIndent("", "\t")
+			if err := enc.Encode(patches); err != nil {
+				klog.ErrorS(err, "encode")
+			}
+
+			klog.V(5).InfoS("policy patches.", "patches", buf.String())
+		}
 		// patch data
 		patchedObj, err := json.Marshal(newObj)
 		if err != nil {
@@ -51,7 +62,7 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 		return admission.PatchResponseFromRaw(req.Object.Raw, patchedObj)
 	}
 
-	if klog.V(4).Enabled() {
+	if klog.V(6).Enabled() {
 		buf := &bytes.Buffer{}
 		enc := json.NewEncoder(buf)
 		enc.SetIndent("", "\t")
@@ -59,7 +70,7 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 			klog.ErrorS(err, "encode")
 		}
 
-		klog.V(4).InfoS("override obj", "obj", buf.String())
+		klog.V(6).InfoS("override obj", "obj", buf.String())
 	}
 
 	cops, ops, err := a.overrideManager.ApplyOverridePolicies(newObj, oldObj, req.Operation)
@@ -84,6 +95,10 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 		klog.V(4).InfoS("override policy applied.", "resource", klog.KObj(obj), utils.AppliedOverrides, string(opBytes), utils.AppliedClusterOverrides, string(copBytes))
 	} else {
 		klog.InfoS("override policy applied.", "resource", klog.KObj(obj))
+	}
+
+	if req.Operation == admissionv1.Delete {
+		return admission.Allowed("")
 	}
 
 	patchedObj, err := json.Marshal(newObj)
