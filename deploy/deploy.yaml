@@ -27,7 +27,7 @@ spec:
   selector:
     matchLabels:
       controller: kinitiras-webhook
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:
@@ -41,6 +41,7 @@ spec:
             - --cert-dir=/certs
             - --v=2
             - --logtostderr=false
+            - --alsologtostderr=true
             - --log_dir=./log
           image: registry.cn-hangzhou.aliyuncs.com/k-cloud-labs/kinitiras-webhook:v0.1.1
           imagePullPolicy: IfNotPresent
@@ -80,4 +81,3 @@ spec:
           hostPath:
             path: /var/log/kinitiras
             type: DirectoryOrCreate
-

@@ -1,23 +1,27 @@
 package webhook
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
-	"github.com/k-cloud-labs/pkg/utils"
-	"github.com/k-cloud-labs/pkg/utils/overridemanager"
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/k-cloud-labs/pkg/utils"
+	"github.com/k-cloud-labs/pkg/utils/interrupter"
+	"github.com/k-cloud-labs/pkg/utils/overridemanager"
 )
 
 type MutatingAdmission struct {
-	decoder         *admission.Decoder
-	overrideManager overridemanager.OverrideManager
+	decoder                  *admission.Decoder
+	overrideManager          overridemanager.OverrideManager
+	policyInterrupterManager interrupter.PolicyInterrupter
 }
 
 // Check if our MutatingAdmission implements necessary interface
@@ -25,30 +29,76 @@ var _ admission.Handler = &MutatingAdmission{}
 var _ admission.DecoderInjector = &MutatingAdmission{}
 
 func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) admission.Response {
-	obj, _, err := decodeObj(a.decoder, req)
+	obj, oldObj, err := decodeObj(a.decoder, req)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
 	newObj := obj.DeepCopy()
+	// if obj is known policy, then run policy interrupter
+	patches, err := a.policyInterrupterManager.OnMutating(newObj, oldObj, req.Operation)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
 
-	cops, ops, err := a.overrideManager.ApplyOverridePolicies(newObj, req.Operation)
+	if len(patches) != 0 {
+		klog.V(4).InfoS("patches for policy", "policy", obj.GroupVersionKind(), "patchesCount", len(patches))
+		if klog.V(5).Enabled() {
+			buf := &bytes.Buffer{}
+			enc := json.NewEncoder(buf)
+			enc.SetIndent("", "\t")
+			if err := enc.Encode(patches); err != nil {
+				klog.ErrorS(err, "encode")
+			}
+
+			klog.V(5).InfoS("policy patches.", "patches", buf.String())
+		}
+		// patch data
+		patchedObj, err := json.Marshal(newObj)
+		if err != nil {
+			return admission.Errored(http.StatusInternalServerError, err)
+		}
+
+		return admission.PatchResponseFromRaw(req.Object.Raw, patchedObj)
+	}
+
+	if klog.V(6).Enabled() {
+		buf := &bytes.Buffer{}
+		enc := json.NewEncoder(buf)
+		enc.SetIndent("", "\t")
+		if err := enc.Encode(obj); err != nil {
+			klog.ErrorS(err, "encode")
+		}
+
+		klog.V(6).InfoS("override obj", "obj", buf.String())
+	}
+
+	cops, ops, err := a.overrideManager.ApplyOverridePolicies(newObj, oldObj, req.Operation)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
 	if klog.V(4).Enabled() {
-		opBytes, err := ops.MarshalJSON()
-		if err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
+		var opBytes, copBytes []byte
+		if ops != nil {
+			opBytes, err = ops.MarshalJSON()
+			if err != nil {
+				return admission.Errored(http.StatusInternalServerError, err)
+			}
 		}
-		copBytes, err := cops.MarshalJSON()
-		if err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
+		if cops != nil {
+			copBytes, err = cops.MarshalJSON()
+			if err != nil {
+				return admission.Errored(http.StatusInternalServerError, err)
+			}
 		}
 		klog.V(4).InfoS("override policy applied.", "resource", klog.KObj(obj), utils.AppliedOverrides, string(opBytes), utils.AppliedClusterOverrides, string(copBytes))
 	} else {
 		klog.InfoS("override policy applied.", "resource", klog.KObj(obj))
+	}
+
+	if req.Operation == admissionv1.Delete {
+		return admission.Allowed("")
 	}
 
 	patchedObj, err := json.Marshal(newObj)
@@ -66,9 +116,10 @@ func (a *MutatingAdmission) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func NewMutatingAdmissionHandler(overrideManager overridemanager.OverrideManager) webhook.AdmissionHandler {
+func NewMutatingAdmissionHandler(overrideManager overridemanager.OverrideManager, policyInterrupterManager interrupter.PolicyInterrupterManager) webhook.AdmissionHandler {
 	return &MutatingAdmission{
-		overrideManager: overrideManager,
+		overrideManager:          overrideManager,
+		policyInterrupterManager: policyInterrupterManager,
 	}
 }
 

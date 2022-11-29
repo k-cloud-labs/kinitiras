@@ -4,16 +4,19 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/k-cloud-labs/pkg/utils/validatemanager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/k-cloud-labs/pkg/utils/interrupter"
+	"github.com/k-cloud-labs/pkg/utils/validatemanager"
 
 	pkgadmission "github.com/k-cloud-labs/kinitiras/pkg/admission"
 )
 
 type ValidatingAdmission struct {
-	decoder         *admission.Decoder
-	validateManager validatemanager.ValidateManager
+	decoder                  *admission.Decoder
+	validateManager          validatemanager.ValidateManager
+	policyInterrupterManager interrupter.PolicyInterrupter
 }
 
 // Check if our MutatingAdmission implements necessary interface
@@ -24,6 +27,12 @@ func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request)
 	obj, oldObj, err := decodeObj(v.decoder, req)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	// if obj is known policy, then run policy interrupter
+	err = v.policyInterrupterManager.OnValidating(obj, oldObj, req.Operation)
+	if err != nil {
+		return admission.Denied(err.Error())
 	}
 
 	result, err := v.validateManager.ApplyValidatePolicies(obj, oldObj, req.Operation)
@@ -45,8 +54,9 @@ func (a *ValidatingAdmission) InjectDecoder(d *admission.Decoder) error {
 	return nil
 }
 
-func NewValidatingAdmissionHandler(validateManager validatemanager.ValidateManager) webhook.AdmissionHandler {
+func NewValidatingAdmissionHandler(validateManager validatemanager.ValidateManager, policyInterrupterManager interrupter.PolicyInterrupterManager) webhook.AdmissionHandler {
 	return &ValidatingAdmission{
-		validateManager: validateManager,
+		validateManager:          validateManager,
+		policyInterrupterManager: policyInterrupterManager,
 	}
 }

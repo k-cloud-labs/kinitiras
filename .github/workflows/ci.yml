@@ -15,7 +15,7 @@ jobs:
       - name: install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.x
+          go-version: 1.18.x
       - name: lint
         run: hack/verify-staticcheck.sh
       - name: import alias
@@ -29,7 +29,7 @@ jobs:
       - name: install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.x
+          go-version: 1.18.x
       - name: go fmt check
         run: make fmt-check
   vet:
@@ -41,7 +41,7 @@ jobs:
       - name: install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.x
+          go-version: 1.18.x
       - name: go vet
         run: make vet
   test:
@@ -56,7 +56,7 @@ jobs:
       - name: install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.x
+          go-version: 1.18.x
       - name: Run coverage
         run: ./script/test.sh
       - name: Codecov

@@ -1,0 +1,32 @@
+kind: OverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-tolerations-op-plaintext
+  namespace: default
+  labels:
+    kinitiras.kcloudlabs.io/webhook: enabled
+spec:
+  resourceSelectors:
+    # match Pod with below label
+    - apiVersion: v1
+      kind: Pod
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    - targetOperations:
+        - CREATE
+        - UPDATE
+      overriders:
+        template:
+          type: tolerations
+          operation: replace # replace(add if key not exist)
+          tolerations:
+          - effect: NoExecute
+            key: node.kubernetes.io/no-cpu # match with this key when replace or remove
+            operator: Exists
+            tolerationSeconds: 500
+          - effect: NoExecute
+            key: node.kubernetes.io/no-xxx
+            operator: Exists
+            tolerationSeconds: 500

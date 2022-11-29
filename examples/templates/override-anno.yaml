@@ -1,0 +1,94 @@
+kind: OverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-anno-op-plaintext
+  namespace: default
+  labels:
+    kinitiras.kcloudlabs.io/webhook: enabled
+spec:
+  resourceSelectors:
+    # match Pod with below label
+    - apiVersion: v1
+      kind: Pod
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    # rule-1
+    - targetOperations: # affect when pod create and update any times
+        - UPDATE
+        - CREATE
+      overriders:
+        template:
+          # remove /metadata/annotations/xxxi-d from current object if exist.
+          type: annotations # operate annotations
+          operation: remove
+          path: "xxx-id" # no need provide whole path only need key of annotations
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          type: annotations
+          operation: replace
+          path: "owned-by" # replace (delete & add) `owned-by:cue` to annotations
+          value:
+            string: "cue"
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          # replace key1:value2 and key2:value2 to annotations when pod update
+          type: annotations
+          operation: replace
+          value:
+            stringMap:
+              key1: value1
+              key2: value2
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          # replace key=restartPolicy, value={{/spec/restartPolicy}} to annotations
+          # the value get from current object.spec.restartPolicy
+          type: annotations
+          operation: replace
+          path: restartPolicy
+          valueRef:
+            from: current
+            path: "/spec/restartPolicy"
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          # replace key=deployment-name to annotations
+          # get current object references[0] and refer the `/metadata/ownerReferences/0/name`
+          # for a Pod, references[0] is  the replicaset and the value of `/metadata/ownerReferences/0/name` is
+          # actually deployment name
+          type: annotations
+          operation: replace
+          path: deployment-name
+          valueRef:
+            from: owner
+            path: "/metadata/ownerReferences/0/name"
+    - targetOperations:
+        - UPDATE
+      overriders:
+        template:
+          type: annotations
+          operation: replace
+          path: deployment-name-2
+          # reference another object from current cluster
+          valueRef:
+            from: k8s
+            path: "/metadata/name"
+            k8s:
+              # can config resource selector
+              # namespace/name or labelSelector
+              apiVersion: apps/v1
+              kind: Deployment
+              labelSelector:
+                matchLabels:
+                  # the value of labels can reference value from current matched object
+                  # such as this example, the value get from current object.metadata.labels.app
+                  # it will get error if there is no this label
+                  app: "{{metadata.labels.app}}"

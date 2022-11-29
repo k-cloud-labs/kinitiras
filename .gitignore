@@ -20,3 +20,6 @@ vendor/
 
 # debug
 debug/
+
+# output
+output/

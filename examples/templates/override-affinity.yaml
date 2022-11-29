@@ -1,0 +1,97 @@
+kind: OverridePolicy
+apiVersion: policy.kcloudlabs.io/v1alpha1
+metadata:
+  name: add-affinity-op-plaintext
+  namespace: default
+  labels:
+    kinitiras.kcloudlabs.io/webhook: enabled
+spec:
+  resourceSelectors:
+    # match Pod with below label
+    - apiVersion: v1
+      kind: Pod
+      labelSelector:
+        matchLabels:
+          kinitiras.kcloudlabs.io/webhook: enabled
+  overrideRules:
+    - targetOperations:
+        - CREATE
+      overriders:
+        template:
+          type: affinity
+          operation: add
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - preference:
+                    matchExpressions:
+                      - key: prefer
+                        operator: In
+                        values:
+                          - zzc
+                  weight: 2
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: required
+                        operator: In
+                        values:
+                          - zzc
+    - targetOperations:
+        - CREATE
+        - UPDATE
+      overriders:
+        template:
+          type: affinity
+          operation: add
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - preference:
+                    matchFields:
+                      - key: bromo
+                        operator: In
+                        values:
+                          - abcd
+                  weight: 100
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: bromo
+                        operator: In
+                        values:
+                          - abc
+            podAffinity:
+              # replace the preferredDuringSchedulingIgnoredDuringExecution if the field is empty
+              # and add as a new element if it's not
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - podAffinityTerm:
+                    labelSelector:
+                      matchExpressions:
+                        - key: bromo_deployment
+                          operator: In
+                          values:
+                            - "221019111032552325"
+                        - key: bromo_service
+                          operator: In
+                          values:
+                            - szdevops-yushan-test-sg
+                    topologyKey: kubernetes.io/hostname
+                  weight: 100
+            podAntiAffinity:
+              # replace the preferredDuringSchedulingIgnoredDuringExecution if the field is empty
+              # and add as a new element if it's not
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - podAffinityTerm:
+                    labelSelector:
+                      matchExpressions:
+                        - key: bromo_deployment
+                          operator: In
+                          values:
+                            - "221019111032552325"
+                        - key: bromo_service
+                          operator: In
+                          values:
+                            - szdevops-yushan-test-sg
+                    topologyKey: kubernetes.io/hostname
+                  weight: 100

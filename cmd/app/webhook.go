@@ -8,17 +8,27 @@ import (
 	"net/http"
 	"os"
 
-	policyv1alpha1 "github.com/k-cloud-labs/pkg/apis/policy/v1alpha1"
-	"github.com/k-cloud-labs/pkg/utils/informermanager"
-	"github.com/k-cloud-labs/pkg/utils/overridemanager"
-	"github.com/k-cloud-labs/pkg/utils/validatemanager"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
 	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	policyv1alpha1 "github.com/k-cloud-labs/pkg/apis/policy/v1alpha1"
+	"github.com/k-cloud-labs/pkg/client/listers/policy/v1alpha1"
+	"github.com/k-cloud-labs/pkg/utils/dynamiclister"
+	"github.com/k-cloud-labs/pkg/utils/informermanager"
+	"github.com/k-cloud-labs/pkg/utils/interrupter"
+	"github.com/k-cloud-labs/pkg/utils/overridemanager"
+	"github.com/k-cloud-labs/pkg/utils/templatemanager"
+	"github.com/k-cloud-labs/pkg/utils/templatemanager/templates"
+	"github.com/k-cloud-labs/pkg/utils/tokenmanager"
+	"github.com/k-cloud-labs/pkg/utils/validatemanager"
 
 	"github.com/k-cloud-labs/kinitiras/cmd/app/options"
 	"github.com/k-cloud-labs/kinitiras/pkg/controller/cert"
@@ -95,17 +105,19 @@ func Run(ctx context.Context, opts *options.Options) error {
 		return err
 	}
 
-	informerManager := informermanager.NewSingleClusterInformerManager(dynamic.NewForConfigOrDie(hookManager.GetConfig()), 0, ctx.Done())
-
-	overrideManager, err := setupOverridePolicyManager(informerManager)
-	if err != nil {
-		klog.ErrorS(err, "failed to setup override policy manager.")
+	sm := &setupManager{}
+	if err := sm.init(hookManager, ctx.Done()); err != nil {
+		klog.ErrorS(err, "init setup manager failed")
 		return err
 	}
 
-	validateManager, err := setupValidatePolicyManager(informerManager)
-	if err != nil {
-		klog.ErrorS(err, "failed to setup validate policy manager.")
+	if err := sm.waitForCacheSync(ctx); err != nil {
+		klog.ErrorS(err, "wait for cache sync failed")
+		return err
+	}
+
+	if err := sm.setupInterrupter(); err != nil {
+		klog.ErrorS(err, "setup interrupter failed")
 		return err
 	}
 
@@ -137,8 +149,8 @@ func Run(ctx context.Context, opts *options.Options) error {
 
 		klog.InfoS("registering webhooks to the webhook server.")
 		hookServer := hookManager.GetWebhookServer()
-		hookServer.Register("/mutate", &webhook.Admission{Handler: pkgwebhook.NewMutatingAdmissionHandler(overrideManager)})
-		hookServer.Register("/validate", &webhook.Admission{Handler: pkgwebhook.NewValidatingAdmissionHandler(validateManager)})
+		hookServer.Register("/mutate", &webhook.Admission{Handler: pkgwebhook.NewMutatingAdmissionHandler(sm.overrideManager, sm.policyInterrupterManager)})
+		hookServer.Register("/validate", &webhook.Admission{Handler: pkgwebhook.NewValidatingAdmissionHandler(sm.validateManager, sm.policyInterrupterManager)})
 		hookServer.WebhookMux.Handle("/readyz", http.StripPrefix("/readyz", &healthz.Handler{}))
 	}()
 
@@ -152,7 +164,127 @@ func Run(ctx context.Context, opts *options.Options) error {
 	return nil
 }
 
-func setupOverridePolicyManager(informerManager informermanager.SingleClusterInformerManager) (overridemanager.OverrideManager, error) {
+type setupManager struct {
+	hookManager              manager.Manager
+	done                     <-chan struct{}
+	client                   client.Client
+	drLister                 dynamiclister.DynamicResourceLister
+	opLister                 v1alpha1.OverridePolicyLister
+	copLister                v1alpha1.ClusterOverridePolicyLister
+	cvpLister                v1alpha1.ClusterValidatePolicyLister
+	informerManager          informermanager.SingleClusterInformerManager
+	overrideManager          overridemanager.OverrideManager
+	validateManager          validatemanager.ValidateManager
+	policyInterrupterManager interrupter.PolicyInterrupterManager
+	tokenManager             tokenmanager.TokenManager
+}
+
+func (s *setupManager) init(hm manager.Manager, done <-chan struct{}) (err error) {
+	s.hookManager = hm
+	s.done = done
+	s.informerManager = informermanager.NewSingleClusterInformerManager(dynamic.NewForConfigOrDie(hm.GetConfig()), 0, done)
+	s.client = hm.GetClient()
+	s.policyInterrupterManager = interrupter.NewPolicyInterrupterManager()
+	s.tokenManager = tokenmanager.NewTokenManager()
+
+	s.drLister, err = dynamiclister.NewDynamicResourceLister(hm.GetConfig(), done)
+	if err != nil {
+		klog.ErrorS(err, "failed to init dynamic client.")
+		return err
+	}
+
+	return nil
+}
+
+func (s *setupManager) waitForCacheSync(ctx context.Context) error {
+	eg, _ := errgroup.WithContext(ctx)
+	eg.Go(func() error {
+		err := s.drLister.RegisterNewResource(true,
+			// pre cached resources
+			schema.GroupVersionKind{
+				Group:   "apps",
+				Version: "v1",
+				Kind:    "Deployment",
+			}, schema.GroupVersionKind{
+				Version: "v1",
+				Kind:    "Pod",
+			}, schema.GroupVersionKind{
+				Group:   "apps",
+				Version: "v1",
+				Kind:    "ReplicaSet",
+			})
+		if err != nil {
+			klog.ErrorS(err, "failed to register resource to lister")
+		}
+		return err
+	})
+	eg.Go(func() error {
+		if err := s.setupOverridePolicyManager(); err != nil {
+			klog.ErrorS(err, "failed to setup override policy manager.")
+			return err
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+
+		if err := s.setupValidatePolicyManager(); err != nil {
+			klog.ErrorS(err, "failed to setup validate policy manager.")
+			return err
+		}
+
+		return nil
+	})
+
+	return eg.Wait()
+}
+
+func (s *setupManager) setupInterrupter() error {
+	otm, err := templatemanager.NewOverrideTemplateManager(&templatemanager.TemplateSource{
+		Content:      templates.OverrideTemplate,
+		TemplateName: "BaseTemplate",
+	})
+	if err != nil {
+		klog.ErrorS(err, "failed to setup mutating template manager.")
+		return err
+	}
+
+	vtm, err := templatemanager.NewValidateTemplateManager(&templatemanager.TemplateSource{
+		Content:      templates.ValidateTemplate,
+		TemplateName: "BaseTemplate",
+	})
+	if err != nil {
+		klog.ErrorS(err, "failed to setup validate template manager.")
+		return err
+	}
+
+	// base
+	baseInterrupter := interrupter.NewBaseInterrupter(otm, vtm, templatemanager.NewCueManager())
+
+	// op
+	overridePolicyInterrupter := interrupter.NewOverridePolicyInterrupter(baseInterrupter, s.tokenManager, s.client, s.opLister)
+	s.policyInterrupterManager.AddInterrupter(schema.GroupVersionKind{
+		Group:   policyv1alpha1.SchemeGroupVersion.Group,
+		Version: policyv1alpha1.SchemeGroupVersion.Version,
+		Kind:    "OverridePolicy",
+	}, overridePolicyInterrupter)
+	// cop
+	s.policyInterrupterManager.AddInterrupter(schema.GroupVersionKind{
+		Group:   policyv1alpha1.SchemeGroupVersion.Group,
+		Version: policyv1alpha1.SchemeGroupVersion.Version,
+		Kind:    "ClusterOverridePolicy",
+	}, interrupter.NewClusterOverridePolicyInterrupter(overridePolicyInterrupter, s.copLister))
+	// cvp
+	s.policyInterrupterManager.AddInterrupter(schema.GroupVersionKind{
+		Group:   policyv1alpha1.SchemeGroupVersion.Group,
+		Version: policyv1alpha1.SchemeGroupVersion.Version,
+		Kind:    "ClusterValidatePolicy",
+	}, interrupter.NewClusterValidatePolicyInterrupter(baseInterrupter, s.tokenManager, s.client, s.cvpLister))
+
+	return nil
+}
+
+func (s *setupManager) setupOverridePolicyManager() (err error) {
 	opGVR := schema.GroupVersionResource{
 		Group:    policyv1alpha1.SchemeGroupVersion.Group,
 		Version:  policyv1alpha1.SchemeGroupVersion.Version,
@@ -163,32 +295,34 @@ func setupOverridePolicyManager(informerManager informermanager.SingleClusterInf
 		Version:  policyv1alpha1.SchemeGroupVersion.Version,
 		Resource: "clusteroverridepolicies",
 	}
-	opInformer := informerManager.Informer(opGVR)
-	copInformer := informerManager.Informer(copGVR)
+	opInformer := s.informerManager.Informer(opGVR)
+	copInformer := s.informerManager.Informer(copGVR)
 
-	informerManager.Start()
-
-	if cache := informerManager.WaitForCacheSync(); !cache[opGVR] || !cache[copGVR] {
-		return nil, errors.New("failed to sync override policy.")
+	s.informerManager.Start()
+	if cache := s.informerManager.WaitForCacheSync(); !cache[opGVR] || !cache[copGVR] {
+		return errors.New("failed to sync override policy")
 	}
 
-	return overridemanager.NewOverrideManager(lister.NewUnstructuredClusterOverridePolicyLister(copInformer.GetIndexer()),
-		lister.NewUnstructuredOverridePolicyLister(opInformer.GetIndexer())), nil
+	s.opLister = lister.NewUnstructuredOverridePolicyLister(opInformer.GetIndexer())
+	s.copLister = lister.NewUnstructuredClusterOverridePolicyLister(copInformer.GetIndexer())
+	s.overrideManager = overridemanager.NewOverrideManager(s.drLister, s.copLister, s.opLister)
+	return nil
 }
 
-func setupValidatePolicyManager(informerManager informermanager.SingleClusterInformerManager) (validatemanager.ValidateManager, error) {
+func (s *setupManager) setupValidatePolicyManager() (err error) {
 	cvpGVR := schema.GroupVersionResource{
 		Group:    policyv1alpha1.SchemeGroupVersion.Group,
 		Version:  policyv1alpha1.SchemeGroupVersion.Version,
 		Resource: "clustervalidatepolicies",
 	}
-	cvpInformer := informerManager.Informer(cvpGVR)
+	cvpInformer := s.informerManager.Informer(cvpGVR)
 
-	informerManager.Start()
-
-	if cache := informerManager.WaitForCacheSync(); !cache[cvpGVR] {
-		return nil, errors.New("failed to sync validate policy.")
+	s.informerManager.Start()
+	if cache := s.informerManager.WaitForCacheSync(); !cache[cvpGVR] {
+		return errors.New("failed to sync validate policy")
 	}
 
-	return validatemanager.NewValidateManager(lister.NewUnstructuredClusterValidatePolicyLister(cvpInformer.GetIndexer())), nil
+	s.cvpLister = lister.NewUnstructuredClusterValidatePolicyLister(cvpInformer.GetIndexer())
+	s.validateManager = validatemanager.NewValidateManager(s.drLister, s.cvpLister)
+	return nil
 }
