@@ -39,7 +39,7 @@ Three kind of policy are supported.
 
 `OverridePolicy` is used to mutate object in the same namespace.  
 `ClusterOverridePolicy` is used to mutate object in any namespace.  
-`CLusterValidatePolciy` is used to validate object in any namespace.
+`ClusterValidatePolciy` is used to validate object in any namespace.
 
 For cluster scoped resource:
 - Apply ClusterOverridePolicy by policies name in ascending;
