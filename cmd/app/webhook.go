@@ -12,6 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,6 +25,7 @@ import (
 	"github.com/k-cloud-labs/pkg/utils/dynamiclister"
 	"github.com/k-cloud-labs/pkg/utils/informermanager"
 	"github.com/k-cloud-labs/pkg/utils/interrupter"
+	"github.com/k-cloud-labs/pkg/utils/metrics"
 	"github.com/k-cloud-labs/pkg/utils/overridemanager"
 	"github.com/k-cloud-labs/pkg/utils/templatemanager"
 	"github.com/k-cloud-labs/pkg/utils/templatemanager/templates"
@@ -298,8 +300,26 @@ func (s *setupManager) setupOverridePolicyManager() (err error) {
 	opInformer := s.informerManager.Informer(opGVR)
 	copInformer := s.informerManager.Informer(copGVR)
 
+	opInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			metrics.IncrPolicy("OverridePolicy")
+		},
+		DeleteFunc: func(obj interface{}) {
+			metrics.DecPolicy("OverridePolicy")
+		},
+	})
+
+	copInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			metrics.IncrPolicy("ClusterOverridePolicy")
+		},
+		DeleteFunc: func(obj interface{}) {
+			metrics.DecPolicy("ClusterOverridePolicy")
+		},
+	})
+
 	s.informerManager.Start()
-	if cache := s.informerManager.WaitForCacheSync(); !cache[opGVR] || !cache[copGVR] {
+	if result := s.informerManager.WaitForCacheSync(); !result[opGVR] || !result[copGVR] {
 		return errors.New("failed to sync override policy")
 	}
 
@@ -317,8 +337,17 @@ func (s *setupManager) setupValidatePolicyManager() (err error) {
 	}
 	cvpInformer := s.informerManager.Informer(cvpGVR)
 
+	cvpInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			metrics.IncrPolicy("ClusterValidatePolicy")
+		},
+		DeleteFunc: func(obj interface{}) {
+			metrics.DecPolicy("ClusterValidatePolicy")
+		},
+	})
+
 	s.informerManager.Start()
-	if cache := s.informerManager.WaitForCacheSync(); !cache[cvpGVR] {
+	if result := s.informerManager.WaitForCacheSync(); !result[cvpGVR] {
 		return errors.New("failed to sync validate policy")
 	}
 
