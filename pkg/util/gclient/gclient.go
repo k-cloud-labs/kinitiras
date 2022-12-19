@@ -5,6 +5,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	clientsetscheme "github.com/k-cloud-labs/pkg/client/clientset/versioned/scheme"
 )
 
 // aggregatedScheme aggregates Kubernetes and extended schemes.
@@ -13,6 +15,7 @@ var aggregatedScheme = runtime.NewScheme()
 func init() {
 	var _ = scheme.AddToScheme(aggregatedScheme) // add Kubernetes schemes
 	// add custom crd scheme to aggregatedScheme
+	var _ = clientsetscheme.AddToScheme(aggregatedScheme)
 }
 
 // NewSchema returns a singleton schema set which aggregated Kubernetes's schemes and extended schemes.

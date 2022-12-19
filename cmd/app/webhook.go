@@ -283,7 +283,7 @@ func (s *setupManager) setupInterrupter() error {
 		Kind:    "ClusterValidatePolicy",
 	}, interrupter.NewClusterValidatePolicyInterrupter(baseInterrupter, s.tokenManager, s.client, s.cvpLister))
 
-	return nil
+	return s.policyInterrupterManager.OnStartUp()
 }
 
 func (s *setupManager) setupOverridePolicyManager() (err error) {
