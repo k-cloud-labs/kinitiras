@@ -43,7 +43,7 @@ spec:
             - --logtostderr=false
             - --alsologtostderr=true
             - --log_dir=./log
-          image: registry.cn-hangzhou.aliyuncs.com/k-cloud-labs/kinitiras-webhook:v0.2.0
+          image: registry.cn-hangzhou.aliyuncs.com/k-cloud-labs/kinitiras-webhook:v0.2.1
           imagePullPolicy: IfNotPresent
           name: kinitiras-webhook
           env:
