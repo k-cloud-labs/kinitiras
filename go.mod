@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/k-cloud-labs/pkg v0.4.1
+	github.com/k-cloud-labs/pkg v0.4.2
 	github.com/open-policy-agent/cert-controller v0.3.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
