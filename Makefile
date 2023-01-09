@@ -11,7 +11,7 @@ TESTTAGS ?= ""
 VETPACKAGES ?= $(shell $(GO) list ./... | grep -v /examples/)
 
 # Images management
-REGISTRY?="registry.cn-hangzhou.aliyuncs.com/k-cloud-labs"
+REGISTRY?="ghcr.io/k-cloud-labs"
 
 # Git information
 GIT_VERSION ?= $(shell git describe --tags --dirty --always)
