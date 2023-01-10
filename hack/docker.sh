@@ -9,7 +9,7 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 source "${REPO_ROOT}/hack/util.sh"
 
-REGISTRY=${REGISTRY:-"registry.cn-hangzhou.aliyuncs.com/k-cloud-labs"}
+REGISTRY=${REGISTRY:-"ghcr.io/k-cloud-labs"}
 VERSION=${VERSION:="unknown"}
 DockerfileName=${DockerfileName:="Dockerfile"}
 
