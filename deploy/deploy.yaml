@@ -43,7 +43,7 @@ spec:
             - --logtostderr=false
             - --alsologtostderr=true
             - --log_dir=./log
-          image: ghcr.io/k-cloud-labs/kinitiras-webhook:v0.2.1
+          image: ghcr.io/k-cloud-labs/kinitiras-webhook:v0.2.2
           imagePullPolicy: IfNotPresent
           name: kinitiras-webhook
           env:
