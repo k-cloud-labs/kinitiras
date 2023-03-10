@@ -1,7 +1,10 @@
 package options
 
 import (
+	"strings"
+
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/component-base/cli/globalflag"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
@@ -38,6 +41,8 @@ type Options struct {
 	KubeAPIQPS float32
 	// KubeAPIBurst is the burst to allow while talking with kube-apiserver.
 	KubeAPIBurst int
+	// PreCacheResources is a list of resources name to pre-cache when start up.
+	PreCacheResources string
 }
 
 // NewOptions builds an empty options.
@@ -58,6 +63,8 @@ func (o *Options) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&o.TLSMinVersion, "tls-min-version", defaultTLSMinVersion, "Minimum TLS version supported. Possible values: 1.0, 1.1, 1.2, 1.3.")
 	flags.Float32Var(&o.KubeAPIQPS, "kube-api-qps", 40.0, "QPS to use while talking with kube-apiserver. Doesn't cover events and node heartbeat apis which rate limiting is controlled by a different set of flags.")
 	flags.IntVar(&o.KubeAPIBurst, "kube-api-burst", 60, "Burst to use while talking with kube-apiserver. Doesn't cover events and node heartbeat apis which rate limiting is controlled by a different set of flags.")
+	flags.StringVar(&o.PreCacheResources, "pre-cache-resources", "Deployment/apps/v1,Replicas/apps/v1", "Resources list separate by comma, for example: Pod/v1,Deployment/apps/v1"+
+		". Will pre cache those resources to get it quicker when policies refer resources from cluster.")
 
 	globalflag.AddGlobalFlags(flags, "global")
 }
@@ -67,4 +74,33 @@ func PrintFlags(flags *pflag.FlagSet) {
 	flags.VisitAll(func(flag *pflag.Flag) {
 		klog.Infof("FLAG: --%s=%q", flag.Name, flag.Value)
 	})
+}
+
+func (o *Options) PreCacheResourcesToGVKList() []schema.GroupVersionKind {
+	var (
+		resourceList = strings.Split(o.PreCacheResources, ",")
+		gvkList      = make([]schema.GroupVersionKind, 0, len(resourceList))
+	)
+
+	for _, resource := range resourceList {
+		items := strings.Split(resource, "/")
+		if len(items) <= 1 {
+			// ignore it
+			continue
+		}
+
+		gvk := schema.GroupVersionKind{
+			Kind:    items[0],
+			Version: items[1],
+		}
+
+		if len(items) == 3 {
+			gvk.Group = items[1]
+			gvk.Version = items[2]
+		}
+
+		gvkList = append(gvkList, gvk)
+	}
+
+	return gvkList
 }

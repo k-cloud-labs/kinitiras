@@ -107,7 +107,9 @@ func Run(ctx context.Context, opts *options.Options) error {
 		return err
 	}
 
-	sm := &setupManager{}
+	sm := &setupManager{
+		opts: opts,
+	}
 	if err := sm.init(hookManager, ctx.Done()); err != nil {
 		klog.ErrorS(err, "init setup manager failed")
 		return err
@@ -167,6 +169,7 @@ func Run(ctx context.Context, opts *options.Options) error {
 }
 
 type setupManager struct {
+	opts                     *options.Options
 	hookManager              manager.Manager
 	done                     <-chan struct{}
 	client                   client.Client
@@ -201,20 +204,8 @@ func (s *setupManager) init(hm manager.Manager, done <-chan struct{}) (err error
 func (s *setupManager) waitForCacheSync(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error {
-		err := s.drLister.RegisterNewResource(true,
-			// pre cached resources
-			schema.GroupVersionKind{
-				Group:   "apps",
-				Version: "v1",
-				Kind:    "Deployment",
-			}, schema.GroupVersionKind{
-				Version: "v1",
-				Kind:    "Pod",
-			}, schema.GroupVersionKind{
-				Group:   "apps",
-				Version: "v1",
-				Kind:    "ReplicaSet",
-			})
+		// pre cached resources
+		err := s.drLister.RegisterNewResource(true, s.opts.PreCacheResourcesToGVKList()...)
 		if err != nil {
 			klog.ErrorS(err, "failed to register resource to lister")
 		}
