@@ -3,10 +3,13 @@ package webhook
 import (
 	"context"
 	"net/http"
+	"time"
 
+	utiltrace "k8s.io/utils/trace"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	"github.com/k-cloud-labs/pkg/utils"
 	"github.com/k-cloud-labs/pkg/utils/interrupter"
 	"github.com/k-cloud-labs/pkg/utils/validatemanager"
 
@@ -24,6 +27,9 @@ var _ admission.Handler = &ValidatingAdmission{}
 var _ admission.DecoderInjector = &ValidatingAdmission{}
 
 func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request) admission.Response {
+	trace := utiltrace.New("Mutating", traceFields(req, "validating")...)
+	defer trace.LogIfLong(500 * time.Millisecond)
+
 	obj, oldObj, err := decodeObj(v.decoder, req)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
@@ -35,7 +41,7 @@ func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request)
 		return admission.Denied(err.Error())
 	}
 
-	result, err := v.validateManager.ApplyValidatePolicies(obj, oldObj, req.Operation)
+	result, err := v.validateManager.ApplyValidatePolicies(utils.ContextWithTrace(ctx, trace), obj, oldObj, req.Operation)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}

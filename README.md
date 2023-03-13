@@ -14,14 +14,12 @@ If you want to use it in clientside with client-go, please use [pidalio](https:/
 
 ## Quick Start
 
-### Apply crd files to your cluster
+### Add Helm source
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/k-cloud-labs/pkg/main/charts/_crds/bases/policy.kcloudlabs.io_overridepolicies.yaml
-kubectl apply -f https://raw.githubusercontent.com/k-cloud-labs/pkg/main/charts/_crds/bases/policy.kcloudlabs.io_clusteroverridepolicies.yaml
-kubectl apply -f https://raw.githubusercontent.com/k-cloud-labs/pkg/main/charts/_crds/bases/policy.kcloudlabs.io_clustervalidatepolicies.yaml
+helm repo add k-cloud-labs https://k-cloud-labs.github.io/helm-charts
 ```
 
-### Deploy webhook to cluster
+### Install
 All resources will be applied to `kinitiras-system` namespace by default. You can modify the deployment files as your expect.  
 
 Pay attention to the deploy/webhook-configuration.yaml file. The default config will mutate and validate all kubernetes resources filtered by label `kinitiras.kcloudlabs.io/webhook: enabled`.  
@@ -31,7 +29,7 @@ Pay attention to the deploy/webhook-configuration.yaml file. The default config 
 After all changes done, just apply it to your cluster.  
 
 ```shell
-kubectl apply -f deploy/
+helm install kinitiras-webhook k-cloud-labs/kinitiras --namespace kinitiras-system --create-namespace
 ```
 
 ### Create policy 
