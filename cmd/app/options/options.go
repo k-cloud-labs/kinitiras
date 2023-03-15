@@ -1,6 +1,7 @@
 package options
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -42,7 +43,9 @@ type Options struct {
 	// KubeAPIBurst is the burst to allow while talking with kube-apiserver.
 	KubeAPIBurst int
 	// PreCacheResources is a list of resources name to pre-cache when start up.
-	PreCacheResources string
+	PreCacheResources *ResourceSlice
+	// EnablePProf is switch to enable/disable net/http/pprof. Default value as false.
+	EnablePProf bool
 }
 
 // NewOptions builds an empty options.
@@ -52,6 +55,7 @@ func NewOptions() *Options {
 
 // AddFlags adds flags to the specified FlagSet.
 func (o *Options) AddFlags(flags *pflag.FlagSet) {
+	o.PreCacheResources = NewPreCacheResources([]string{"Deployment/apps/v1", "ReplicaSet/apps/v1"})
 	flags.StringVar(&o.BindAddress, "bind-address", defaultBindAddress,
 		"The IP address on which to listen for the --secure-port port.")
 	flags.IntVar(&o.SecurePort, "secure-port", defaultPort,
@@ -63,8 +67,9 @@ func (o *Options) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&o.TLSMinVersion, "tls-min-version", defaultTLSMinVersion, "Minimum TLS version supported. Possible values: 1.0, 1.1, 1.2, 1.3.")
 	flags.Float32Var(&o.KubeAPIQPS, "kube-api-qps", 40.0, "QPS to use while talking with kube-apiserver. Doesn't cover events and node heartbeat apis which rate limiting is controlled by a different set of flags.")
 	flags.IntVar(&o.KubeAPIBurst, "kube-api-burst", 60, "Burst to use while talking with kube-apiserver. Doesn't cover events and node heartbeat apis which rate limiting is controlled by a different set of flags.")
-	flags.StringVar(&o.PreCacheResources, "pre-cache-resources", "Deployment/apps/v1,Replicas/apps/v1", "Resources list separate by comma, for example: Pod/v1,Deployment/apps/v1"+
+	flags.VarP(o.PreCacheResources, "pre-cache-resources", "", "Resources list separate by comma, for example: Pod/v1,Deployment/apps/v1"+
 		". Will pre cache those resources to get it quicker when policies refer resources from cluster.")
+	flags.BoolVar(&o.EnablePProf, "enable-pprof", false, "EnablePProf is switch to enable/disable net/http/pprof. Default value as false.")
 
 	globalflag.AddGlobalFlags(flags, "global")
 }
@@ -76,31 +81,103 @@ func PrintFlags(flags *pflag.FlagSet) {
 	})
 }
 
-func (o *Options) PreCacheResourcesToGVKList() []schema.GroupVersionKind {
-	var (
-		resourceList = strings.Split(o.PreCacheResources, ",")
-		gvkList      = make([]schema.GroupVersionKind, 0, len(resourceList))
-	)
+type ResourceSlice struct {
+	value   *[]schema.GroupVersionKind
+	changed bool
+}
 
-	for _, resource := range resourceList {
-		items := strings.Split(resource, "/")
-		if len(items) <= 1 {
-			// ignore it
-			continue
+func NewPreCacheResources(slice []string) *ResourceSlice {
+	value := make([]schema.GroupVersionKind, 0)
+	s := &ResourceSlice{value: &value}
+	_ = s.Replace(slice)
+	return s
+}
+
+func (s *ResourceSlice) String() string {
+	sb := &strings.Builder{}
+
+	for i, gvk := range *s.value {
+		if i != 0 {
+			sb.WriteString(",")
 		}
-
-		gvk := schema.GroupVersionKind{
-			Kind:    items[0],
-			Version: items[1],
-		}
-
-		if len(items) == 3 {
-			gvk.Group = items[1]
-			gvk.Version = items[2]
-		}
-
-		gvkList = append(gvkList, gvk)
+		sb.WriteString(gvk.Kind + "/" + gvk.GroupVersion().String())
 	}
 
-	return gvkList
+	return "[" + sb.String() + "]"
+}
+
+func (s *ResourceSlice) Set(val string) error {
+	if s.value == nil {
+		return fmt.Errorf("no target (nil pointer to []string)")
+	}
+	if !s.changed {
+		*s.value = make([]schema.GroupVersionKind, 0)
+	}
+	gvk, err := s.readResource(val)
+	if err != nil {
+		return err
+	}
+	*s.value = append(*s.value, gvk)
+	s.changed = true
+	return nil
+}
+
+func (s *ResourceSlice) Type() string {
+	return "resourceSlice"
+}
+
+func (s *ResourceSlice) Append(val string) error {
+	gvk, err := s.readResource(val)
+	if err != nil {
+		return err
+	}
+
+	*s.value = append(*s.value, gvk)
+	return nil
+}
+
+func (s *ResourceSlice) Replace(slice []string) error {
+	value := make([]schema.GroupVersionKind, 0, len(slice))
+	for _, str := range slice {
+		gvk, err := s.readResource(str)
+		if err != nil {
+			return err
+		}
+
+		value = append(value, gvk)
+	}
+
+	*s.value = value
+	return nil
+}
+
+func (s *ResourceSlice) GetSlice() []string {
+	var slice = make([]string, 0, len(*s.value))
+	for _, gvk := range *s.value {
+		slice = append(slice, gvk.Kind+"/"+gvk.GroupVersion().String())
+	}
+
+	return slice
+}
+
+func (s *ResourceSlice) readResource(val string) (schema.GroupVersionKind, error) {
+	var gvk schema.GroupVersionKind
+	items := strings.Split(val, "/")
+	if len(items) <= 1 {
+		return gvk, fmt.Errorf("invalid gvk(%v)", val)
+	}
+
+	gvk.Kind = items[0]
+	gvk.Version = items[1]
+
+	if len(items) == 3 {
+		gvk.Group = items[1]
+		gvk.Version = items[2]
+	}
+
+	return gvk, nil
+}
+
+func (o *Options) PreCacheResourcesToGVKList() []schema.GroupVersionKind {
+	return *o.PreCacheResources.value
 }

@@ -4,10 +4,11 @@ go 1.18
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/k-cloud-labs/pkg v0.4.3
+	github.com/k-cloud-labs/pkg v0.4.4
 	github.com/open-policy-agent/cert-controller v0.3.0
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
+	go.etcd.io/etcd/pkg/v3 v3.5.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
 	k8s.io/api v0.23.6
@@ -17,6 +18,7 @@ require (
 	k8s.io/component-base v0.23.6
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.60.1
+	k8s.io/utils v0.0.0-20211116205334-6203023598ed
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
@@ -95,7 +97,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/apiextensions-apiserver v0.23.5 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
-	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.30 // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect

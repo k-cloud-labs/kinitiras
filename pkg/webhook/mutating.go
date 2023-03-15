@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog/v2"
+	utiltrace "k8s.io/utils/trace"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -29,6 +31,9 @@ var _ admission.Handler = &MutatingAdmission{}
 var _ admission.DecoderInjector = &MutatingAdmission{}
 
 func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) admission.Response {
+	trace := utiltrace.New("Mutating", traceFields(req, "mutating")...)
+	defer trace.LogIfLong(500 * time.Millisecond)
+
 	obj, oldObj, err := decodeObj(a.decoder, req)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
@@ -73,7 +78,7 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 		klog.V(6).InfoS("override obj", "obj", buf.String())
 	}
 
-	cops, ops, err := a.overrideManager.ApplyOverridePolicies(newObj, oldObj, req.Operation)
+	cops, ops, err := a.overrideManager.ApplyOverridePolicies(utils.ContextWithTrace(ctx, trace), newObj, oldObj, req.Operation)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
@@ -157,4 +162,12 @@ func decodeObj(decoder *admission.Decoder, req admission.Request) (*unstructured
 	}
 
 	return obj, oldObj, nil
+}
+
+func traceFields(req admission.Request, stage string) []utiltrace.Field {
+	return []utiltrace.Field{
+		{Key: "op", Value: req.Operation},
+		{Key: "stage", Value: stage},
+		{Key: "name", Value: req.Name},
+		{Key: "gvk", Value: req.Kind.String()}}
 }

@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"go.etcd.io/etcd/pkg/v3/debugutil"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -156,6 +157,10 @@ func Run(ctx context.Context, opts *options.Options) error {
 		hookServer.Register("/mutate", &webhook.Admission{Handler: pkgwebhook.NewMutatingAdmissionHandler(sm.overrideManager, sm.policyInterrupterManager)})
 		hookServer.Register("/validate", &webhook.Admission{Handler: pkgwebhook.NewValidatingAdmissionHandler(sm.validateManager, sm.policyInterrupterManager)})
 		hookServer.WebhookMux.Handle("/readyz", http.StripPrefix("/readyz", &healthz.Handler{}))
+		// pprof
+		for s, handler := range debugutil.PProfHandlers() {
+			hookServer.Register(s, handler)
+		}
 	}()
 
 	// blocks until the context is done.
