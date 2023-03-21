@@ -32,7 +32,7 @@ var _ admission.DecoderInjector = &MutatingAdmission{}
 
 func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) admission.Response {
 	trace := utiltrace.New("Mutating", traceFields(req, "mutating")...)
-	defer trace.LogIfLong(500 * time.Millisecond)
+	defer trace.LogIfLong(50 * time.Millisecond)
 
 	obj, oldObj, err := decodeObj(a.decoder, req)
 	if err != nil {

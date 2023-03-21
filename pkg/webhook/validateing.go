@@ -28,7 +28,7 @@ var _ admission.DecoderInjector = &ValidatingAdmission{}
 
 func (v *ValidatingAdmission) Handle(ctx context.Context, req admission.Request) admission.Response {
 	trace := utiltrace.New("Mutating", traceFields(req, "validating")...)
-	defer trace.LogIfLong(500 * time.Millisecond)
+	defer trace.LogIfLong(50 * time.Millisecond)
 
 	obj, oldObj, err := decodeObj(v.decoder, req)
 	if err != nil {
