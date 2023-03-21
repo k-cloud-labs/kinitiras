@@ -108,6 +108,14 @@ func Run(ctx context.Context, opts *options.Options) error {
 		return err
 	}
 
+	// pprof
+	for s, handler := range debugutil.PProfHandlers() {
+		if err = hookManager.AddMetricsExtraHandler(s, handler); err != nil {
+			klog.ErrorS(err, "failed to add pprof handler.")
+			return err
+		}
+	}
+
 	sm := &setupManager{
 		opts: opts,
 	}
@@ -157,10 +165,6 @@ func Run(ctx context.Context, opts *options.Options) error {
 		hookServer.Register("/mutate", &webhook.Admission{Handler: pkgwebhook.NewMutatingAdmissionHandler(sm.overrideManager, sm.policyInterrupterManager)})
 		hookServer.Register("/validate", &webhook.Admission{Handler: pkgwebhook.NewValidatingAdmissionHandler(sm.validateManager, sm.policyInterrupterManager)})
 		hookServer.WebhookMux.Handle("/readyz", http.StripPrefix("/readyz", &healthz.Handler{}))
-		// pprof
-		for s, handler := range debugutil.PProfHandlers() {
-			hookServer.Register(s, handler)
-		}
 	}()
 
 	// blocks until the context is done.

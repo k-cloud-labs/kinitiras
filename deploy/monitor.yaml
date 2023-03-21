@@ -10,4 +10,5 @@ spec:
       scrapeTimeout: 2s
   selector:
     matchLabels:
-      controller: kinitiras-webhook
+      app.kubernetes.io/instance: kinitiras-webhook
+      app.kubernetes.io/name: kinitiras
