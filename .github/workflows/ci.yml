@@ -8,7 +8,7 @@ on:
 jobs:
   golangci:
     name: lint
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - name: checkout code
         uses: actions/checkout@v2
@@ -22,7 +22,7 @@ jobs:
         run: hack/verify-import-aliases.sh
   fmt:
     name: gofmt
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - name: checkout code
         uses: actions/checkout@v2
@@ -34,7 +34,7 @@ jobs:
         run: make fmt-check
   vet:
     name: go vet
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - name: checkout code
         uses: actions/checkout@v2
@@ -49,7 +49,7 @@ jobs:
     needs:
       - fmt
       - vet
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
       - name: checkout code
         uses: actions/checkout@v2
