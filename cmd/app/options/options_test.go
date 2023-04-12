@@ -49,7 +49,7 @@ func TestResourceSlice_Set(t *testing.T) {
 				s: NewPreCacheResources([]string{"Pod/v1"}),
 			},
 			args: args{
-				val: "Node/v1",
+				val: "Node/v1,B/apps/v1",
 			},
 			wantErr: false,
 		},
@@ -79,7 +79,7 @@ func TestResourceSlice_Set(t *testing.T) {
 			if err := tt.fields.s.Set(tt.args.val); (err != nil) != tt.wantErr {
 				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			t.Log(tt.fields.s.Type())
+			t.Log(tt.fields.s.String())
 		})
 	}
 }
