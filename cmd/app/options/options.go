@@ -55,7 +55,7 @@ func NewOptions() *Options {
 
 // AddFlags adds flags to the specified FlagSet.
 func (o *Options) AddFlags(flags *pflag.FlagSet) {
-	o.PreCacheResources = NewPreCacheResources([]string{"Deployment/apps/v1", "ReplicaSet/apps/v1"})
+	o.PreCacheResources = NewPreCacheResources([]string{})
 	flags.StringVar(&o.BindAddress, "bind-address", defaultBindAddress,
 		"The IP address on which to listen for the --secure-port port.")
 	flags.IntVar(&o.SecurePort, "secure-port", defaultPort,
@@ -96,6 +96,11 @@ func NewPreCacheResources(slice []string) *ResourceSlice {
 func (s *ResourceSlice) String() string {
 	sb := &strings.Builder{}
 
+	// check if the value is nil
+	if s.value == nil {
+		return "[]"
+	}
+
 	for i, gvk := range *s.value {
 		if i != 0 {
 			sb.WriteString(",")
@@ -113,12 +118,18 @@ func (s *ResourceSlice) Set(val string) error {
 	if !s.changed {
 		*s.value = make([]schema.GroupVersionKind, 0)
 	}
-	gvk, err := s.readResource(val)
-	if err != nil {
-		return err
+
+	// split by comma
+	vals := strings.Split(val, ",")
+	for _, v := range vals {
+		gvk, err := s.readResource(v)
+		if err != nil {
+			return err
+		}
+		*s.value = append(*s.value, gvk)
+		s.changed = true
 	}
-	*s.value = append(*s.value, gvk)
-	s.changed = true
+
 	return nil
 }
 
