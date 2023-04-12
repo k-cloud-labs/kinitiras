@@ -80,6 +80,7 @@ func TestResourceSlice_Set(t *testing.T) {
 				t.Errorf("Set() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			t.Log(tt.fields.s.String())
+			t.Log(tt.fields.s.Type())
 		})
 	}
 }
