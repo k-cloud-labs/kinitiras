@@ -96,6 +96,11 @@ func NewPreCacheResources(slice []string) *ResourceSlice {
 func (s *ResourceSlice) String() string {
 	sb := &strings.Builder{}
 
+	// check if the value is nil
+	if s.value == nil {
+		return "[]"
+	}
+
 	for i, gvk := range *s.value {
 		if i != 0 {
 			sb.WriteString(",")
