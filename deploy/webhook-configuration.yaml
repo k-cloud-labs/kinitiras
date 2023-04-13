@@ -12,7 +12,7 @@ webhooks:
         namespace: kinitiras-system
         path: /mutate
         port: 8443
-    failurePolicy: Ignore
+    failurePolicy: Fail
     name: webhook.kinitiras.com
     objectSelector:
       matchLabels:
