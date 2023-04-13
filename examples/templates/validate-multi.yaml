@@ -30,7 +30,7 @@ spec:
             from: current
             path: "/metadata/annotations/owned-by"
           value: # reject when field value equals bormo
-            string: "bromo"
+            string: "test"
     - targetOperations:
         - DELETE
       template:
@@ -75,7 +75,7 @@ spec:
           message: "cannot delete this ns"
           value:
             stringSlice:
-              - bromo
+              - test
               - ecp
               - oam
               - leap
@@ -121,7 +121,7 @@ spec:
           message: "cannot delete this ns"
           value:
             stringSlice:
-              - bromo
+              - test
               - leap
               - ecp
           dataRef:

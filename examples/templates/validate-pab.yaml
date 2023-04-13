@@ -10,7 +10,7 @@ spec:
       kind: Pod # match all Pod | can add label to test in part of Pods
       labelSelector:
         matchLabels:
-          controller: bromo
+          controller: test
   validateRules:
     - targetOperations:
         - DELETE
@@ -20,19 +20,11 @@ spec:
           maxUnavailable: 50%
 #          In most case, no need to set replica reference since webhook will try to get replica from
 #          current pod owner reference spec.replica and status.replica.
-#          Only when pod running with custom workload or no k8s workload(bromo) then set replica reference.
+#          Only when pod running with custom workload or no k8s workload(test) then set replica reference.
           replicaReference:
-#            from: k8s
-#            currentReplicaPath: "/status/replica"
-#            targetReplicaPath: "/spec/replica"
-#            k8s:
-#              apiVersion: apps.ecp.shopee.io/v1
-#              kind: Workload
-#              namespace: "{{metadata.namespace}}"
-#              name: "{{metadata.annotation.workload-name}}"
             from: http
             currentReplicaPath: "body.result.deployment.running_task_count"
             targetReplicaPath: "body.result.deployment.target_task_count"
             http:
-              url: "http://192.168.0.107:8081/api/deployment/{{metadata.annotations.bromo_deployment}}"
+              url: "http://192.168.0.107:8081/api/deployment/{{metadata.annotations.test_deployment}}"
               method: GET
