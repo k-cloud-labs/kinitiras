@@ -323,8 +323,8 @@ github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/X
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
-github.com/k-cloud-labs/pkg v0.4.4 h1:3pSJ1woTqTUxw+JPtT2z69j3L/rgLwZuCS7mLEdlfhc=
-github.com/k-cloud-labs/pkg v0.4.4/go.mod h1:IlPsCdDrC9lTY5eX241KsVvN9FKGMUTm2MEJA1vEQ/I=
+github.com/k-cloud-labs/pkg v0.4.5 h1:MvD7ugHZWyEAlH1s4gbWH4tnaxY9YvTYTuGJ8IzmAoY=
+github.com/k-cloud-labs/pkg v0.4.5/go.mod h1:IlPsCdDrC9lTY5eX241KsVvN9FKGMUTm2MEJA1vEQ/I=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
