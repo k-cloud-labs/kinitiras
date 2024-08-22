@@ -77,7 +77,9 @@ func (a *MutatingAdmission) Handle(ctx context.Context, req admission.Request) a
 
 		klog.V(6).InfoS("override obj", "obj", buf.String())
 	}
-
+	if newObj.GetNamespace() == "" && req.Namespace != "" {
+		newObj.SetNamespace(req.Namespace)
+	}
 	cops, ops, err := a.overrideManager.ApplyOverridePolicies(utils.ContextWithTrace(ctx, trace), newObj, oldObj, req.Operation)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
